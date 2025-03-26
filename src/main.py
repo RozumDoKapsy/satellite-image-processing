@@ -6,7 +6,6 @@ CONFIG = {}
 def main():
     sde = SentinelDataExtractor(CONFIG)
     sde.sentinelhub_authentication()
-    print(sde.token)
 
 
 if __name__ == '__main__':

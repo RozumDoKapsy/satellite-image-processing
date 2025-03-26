@@ -8,9 +8,12 @@ import json
 from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
 
+from src.utils.log_utils import setup_loger
+
 
 class SentinelDataExtractor:
     def __init__(self, cfg: dict):
+        self.logger = setup_loger(self.__class__.__name__, 'extraction')
 
         self.secrets_path = Path(__file__).resolve().parents[2] / '.secrets'
         self.token_path = self.secrets_path / 'sentinelhub_token.json'
@@ -46,14 +49,19 @@ class SentinelDataExtractor:
         self.token = self.load_token() if self.token_path.exists() else None
 
         if not self.token or self.expired_token_check():
-            print('Fetching new token.')
-            self.token = self.oauth.fetch_token(
-                token_url='https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token',
-                client_secret=creds['client_secret'], include_client_id=True)
+            try:
+                self.logger.info('Fetching new token.')
+                self.token = self.oauth.fetch_token(
+                    token_url='https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token',
+                    client_secret=creds['client_secret'], include_client_id=True)
 
-            self.save_token(self.token)
+                self.save_token(self.token)
+            except Exception as e:
+                self.logger.error(f'Failed to fetch token: {e}')
+                raise
         else:
-            print('Using existing token from file.')
+            self.logger.info('Using existing token from file.')
+
 
 
 
