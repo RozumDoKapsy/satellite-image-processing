@@ -1,10 +1,4 @@
-from pathlib import Path
-
 from src.extractor.sentinel_hub import SentinelDataExtractor
-
-BASE_PATH = Path(__file__).resolve().parents[1]
-PATH_TO_DATA = BASE_PATH / 'data'
-PATH_TO_IMAGES = PATH_TO_DATA / 'images'
 
 CONFIG = {
     'location': {
@@ -16,8 +10,7 @@ CONFIG = {
             50.0859
         ]
     },
-    'sentinel_type': 'sentinel-2-l2a',
-    'path_to_images': PATH_TO_IMAGES
+    'sentinel_type': 'sentinel-2-l2a'
 }
 
 

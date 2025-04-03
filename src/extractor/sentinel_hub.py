@@ -9,6 +9,7 @@ from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
 
 from src.utils.log_utils import setup_logger
+from src.utils.minio_storage import save_to_minio
 from src.utils.common_utils import get_date_range, get_iso_datetime_format, get_compact_datime_format
 
 
@@ -26,9 +27,17 @@ class SentinelDataExtractor:
 
         self.available_dates = []
 
-    def get_credentials(self) -> dict:
+    def get_sentinelhub_credentials(self) -> dict:
         try:
-            with open(self.secrets_path / 'credentials.json', 'r') as f:
+            with open(self.secrets_path / 'sentinelhub_credentials.json', 'r') as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            self.logger.error(f'Failed to load credentials: {e}')
+            raise
+
+    def get_minio_credentials(self) -> dict:
+        try:
+            with open(self.secrets_path / 'minio_credentials.json', 'r') as f:
                 return json.load(f)
         except (FileNotFoundError, json.JSONDecodeError) as e:
             self.logger.error(f'Failed to load credentials: {e}')
@@ -48,7 +57,7 @@ class SentinelDataExtractor:
         return token_expire_datetime <= datetime.now(pytz.utc) + timedelta(minutes=1)
 
     def sentinelhub_authentication(self):
-        creds = self.get_credentials()
+        creds = self.get_sentinelhub_credentials()
         client = BackendApplicationClient(client_id=creds['client_id'])
         self.oauth = OAuth2Session(client=client)
 
@@ -83,11 +92,12 @@ class SentinelDataExtractor:
             "limit": 5,
         }
 
+        self.logger.info(f'Extracting available dates for ...')
+        self.logger.info(f"Location - {self.cfg['location']['name']}")
+        self.logger.info(f"Date - {iso_start_date} - {iso_end_date}")
+        url = "https://sh.dataspace.copernicus.eu/api/v1/catalog/1.0.0/search"
+
         while True:
-            self.logger.info(f'Extracting available dates for ...')
-            self.logger.info(f"Location - {self.cfg['location']['name']}")
-            self.logger.info(f"Date - {iso_start_date} - {iso_end_date}")
-            url = "https://sh.dataspace.copernicus.eu/api/v1/catalog/1.0.0/search"
             try:
                 response = requests.post(url, json=data, headers=headers)
                 response.raise_for_status()
@@ -171,11 +181,11 @@ class SentinelDataExtractor:
             self.logger.error(f'Failed to get sentinel images: {e}')
             raise
 
-    def save_sentinel_image(self, image, file_name: str, path_to_images: Path):
-        path_to_image = path_to_images / f'{file_name}.tiff'
-        with open(path_to_image, 'wb') as img:
-            img.write(image)
-        self.logger.info(f'Saved image to: {path_to_image}')
+    def save_image(self, file_name: str, image: bytes):
+        minio_creds = self.get_minio_credentials()
+        bucket_name = 'satellite-images'
+        save_to_minio(minio_creds, bucket_name, file_name, image, 'image/tiff', self.logger)
+        self.logger.info(f'Saved image to {bucket_name}/{file_name}')
 
     def extraction_pipeline(self, n_days: int = 1):
         self.sentinelhub_authentication()
@@ -186,6 +196,9 @@ class SentinelDataExtractor:
 
         self.get_available_dates(iso_start_date, iso_end_date)
         for date in self.available_dates:
-            image = self.get_sentinel_image(date)
-            file_name = f"{get_compact_datime_format(date)}_{self.cfg['location']['name']}"
-            self.save_sentinel_image(image, file_name, self.cfg['path_to_images'])
+            try:
+                image = self.get_sentinel_image(date)
+                file_name = f"{get_compact_datime_format(date)}_{self.cfg['location']['name']}.tiff"
+                self.save_image(file_name, image)
+            except Exception as e:
+                self.logger.error(f'Failed to process and save image for date {date}: {e}')
