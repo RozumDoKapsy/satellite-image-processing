@@ -1,0 +1,41 @@
+services:
+  # PostgreSQL Service
+  db:
+    image: postgres:15
+    container_name: satellite_pg
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: adminpass
+      POSTGRES_DB: satellite_image_processing
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./sql:/docker-entrypoint-initdb.d    # SQL scripts for automatic DB setup
+    networks:
+      - satellite-network
+
+  minio:
+    image: minio/minio
+    container_name: satellite_minio
+    restart: always
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    ports:
+      - "9000:9000"
+      - "9090:9090"
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9090"
+    networks:
+      - satellite-network
+
+networks:
+  satellite-network:  # This is where you define the custom network.
+    driver: bridge
+
+volumes:
+  pgdata:
+  minio_data:
