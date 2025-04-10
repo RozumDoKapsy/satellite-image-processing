@@ -1,4 +1,4 @@
-from src.extractor.sentinel_hub import SentinelDataExtractor
+from src.extractor.sentinel_hub import SentinelDataPipeline
 
 CONFIG = {
     'location': {
@@ -15,8 +15,8 @@ CONFIG = {
 
 
 def main():
-    sde = SentinelDataExtractor(CONFIG)
-    sde.extraction_pipeline(n_days=5)
+    sdp = SentinelDataPipeline(CONFIG)
+    sdp.run(n_days=5)
 
 
 if __name__ == '__main__':

@@ -15,59 +15,37 @@ from src.db.pg_data_models import SatelliteImageMetadata
 from src.utils.common_utils import get_date_range, get_iso_datetime_format, get_compact_datime_format
 
 
-class SentinelDataExtractor:
-    def __init__(self, cfg: dict):
-        self.logger = setup_logger(self.__class__.__name__, 'extraction')
-
-        self.secrets_path = Path(__file__).resolve().parents[2] / '.secrets'
-        self.token_path = self.secrets_path / 'sentinelhub_token.json'
-
-        self.cfg = cfg
-        self.bbox = self.coords2bbox()
-
-        self.oauth = None
-        self.token = None
-
-        self.available_dates = []
-
+class CredentialManager:
     # TODO: refactor to .env
     # TODO: save credentials to .env (add them variables for creds to docker-compose)
-    def get_sentinelhub_credentials(self) -> dict:
+    def __init__(self, secrets_path):
+        self.secrets_path = Path(secrets_path)
+
+    def load_json(self, filename):
         try:
-            with open(self.secrets_path / 'sentinelhub_credentials.json', 'r') as f:
+            with open(self.secrets_path / filename, 'r') as f:
                 return json.load(f)
         except (FileNotFoundError, json.JSONDecodeError) as e:
-            self.logger.error(f'Failed to load SentinetlHub credentials: {e}')
-            raise
+            raise RuntimeError(f'Failed to load {filename}: {e}')
 
-    def get_minio_credentials(self) -> dict:
-        try:
-            with open(self.secrets_path / 'minio_credentials.json', 'r') as f:
-                return json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            self.logger.error(f'Failed to load MinIO credentials: {e}')
-            raise
+    def get_sentinelhub_credentials(self):
+        return self.load_json('sentinelhub_credentials.json')
 
-    def get_pg_credentials(self) -> dict:
-        try:
-            with open(self.secrets_path / 'pg_credentials.json', 'r') as f:
-                return json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            self.logger.error(f'Failed to load PostgreSQL credentials: {e}')
-            raise
+    def get_minio_credentials(self):
+        return self.load_json('minio_credentials.json')
 
-    def coords2bbox(self) -> list:
-        """ Extracts coordinates from config and transforms them to bbox list.
+    def get_pg_credentials(self):
+        return self.load_json('pg_credentials.json')
 
-        :return: bbox
-        """
-        bbox = [
-            self.cfg['location']['coordinates']['min_lon'],
-            self.cfg['location']['coordinates']['min_lat'],
-            self.cfg['location']['coordinates']['max_lon'],
-            self.cfg['location']['coordinates']['max_lat']
-        ]
-        return bbox
+
+class SentinelHubAuthenticator:
+    def __init__(self, credentials: dict, token_path: Path, logger):
+        self.client_id = credentials['client_id']
+        self.client_secret = credentials['client_secret']
+        self.token_path = token_path
+        self.logger = logger
+        self.oauth = self.client_setup()
+        self.token = None
 
     def save_token(self, token: dict):
         with open(self.token_path, 'w') as f:
@@ -90,21 +68,23 @@ class SentinelDataExtractor:
         token_expire_datetime = datetime.fromtimestamp(self.token['expires_at'], tz=pytz.utc)
         return token_expire_datetime <= datetime.now(pytz.utc) + timedelta(minutes=1)
 
-    def sentinelhub_authentication(self):
+    def client_setup(self) -> OAuth2Session:
+        client = BackendApplicationClient(client_id=self.client_id)
+        return OAuth2Session(client=client)
+
+    def authenticate(self):
         """ Handles OAuth2 authentication with SentinelHub. Reuses a stored token if valid, otherwise requests a new one.
         """
-        creds = self.get_sentinelhub_credentials()
-        client = BackendApplicationClient(client_id=creds['client_id'])
-        self.oauth = OAuth2Session(client=client)
 
-        self.token = self.load_token() if self.token_path.exists() else None
+        if self.token_path.exists():
+            self.token = self.load_token()
 
         if not self.token or self.expired_token_check():
             try:
                 self.logger.info('Fetching new token.')
                 self.token = self.oauth.fetch_token(
                     token_url='https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token',
-                    client_secret=creds['client_secret'], include_client_id=True)
+                    client_secret=self.client_secret, include_client_id=True)
 
                 self.save_token(self.token)
             except Exception as e:
@@ -112,6 +92,20 @@ class SentinelDataExtractor:
                 raise
         else:
             self.logger.info('Using existing token from file.')
+        return self.token, self.oauth
+
+
+class SentinelImageExtractor:
+    def __init__(self, cfg: dict, oauth: OAuth2Session, token: dict, logger):
+        self.cfg = cfg
+        self.bbox = self._coords_to_bbox()
+        self.token = token
+        self.oauth = oauth
+        self.logger = logger
+
+    def _coords_to_bbox(self):
+        coords = self.cfg['location']['coordinates']
+        return [coords['min_lon'], coords['min_lat'], coords['max_lon'], coords['max_lat']]
 
     def get_available_dates(self, iso_start_datetime: str, iso_end_datetime: str):
         """ Queries SentinelHub Catalog API for available image timestamps within a given image_datetime range and bounding box.
@@ -162,10 +156,10 @@ class SentinelDataExtractor:
                 self.logger.error(f'API request failed: {e}, Response: {response.text}')
                 raise
 
-        self.available_dates = all_dates
-        self.logger.info(f'Available dates: {len(self.available_dates)}')
+        self.logger.info(f'Available dates: {len(all_dates)}')
+        return all_dates
 
-    def get_sentinel_image(self, iso_datetime: str) -> bytes:
+    def download_sentinel_image(self, iso_datetime: str) -> bytes:
         """ Fetches a satellite image for a specific datetime using SentinelHub Process API.
 
         :param iso_datetime: target datetime in ISO format
@@ -175,20 +169,6 @@ class SentinelDataExtractor:
             "Authorization": f"Bearer {self.token['access_token']}",
             "Accept": "image/tiff"
         }
-
-        evalscript = """
-        //VERSION=3
-        function setup() {
-          return {
-            input: ["B02", "B03", "B04", "B08"],
-            output: { bands: 4 },
-          }
-        }
-
-        function evaluatePixel(sample) {
-          return [sample.B04, sample.B03, sample.B02, sample.B08]
-        }
-        """
 
         request = {
             "input": {
@@ -212,7 +192,7 @@ class SentinelDataExtractor:
                 "width": 512,
                 "height": 512,
             },
-            "evalscript": evalscript,
+            "evalscript": self._default_evalscript()
         }
 
         self.logger.info(f"Extracting {self.cfg['sentinel_type']} images for ...")
@@ -227,38 +207,31 @@ class SentinelDataExtractor:
             self.logger.error(f'Failed to get sentinel images: {e}')
             raise
 
-    def save_image(self, file_name: str, image: bytes):
-        """ Uploads the image to MinIO storage under the specified bucket.
+    def _default_evalscript(self):
+        return """
+        //VERSION=3
+        function setup() {
+          return {
+            input: ["B02", "B03", "B04", "B08"],
+            output: { bands: 4 },
+          }
+        }
 
-        :param file_name: filename for stored image
-        :param image: satellite image to save
+        function evaluatePixel(sample) {
+          return [sample.B04, sample.B03, sample.B02, sample.B08]
+        }
         """
-        minio_creds = self.get_minio_credentials()
-        bucket_name = 'satellite-images'
-        save_to_minio(minio_creds, bucket_name, file_name, image, 'image/tiff', self.logger)
-        self.logger.info(f'Saved image to {bucket_name}/{file_name}')
 
-    # TODO: mechanism to load metadata later (i.e. when PostgreSQL fails)
-    def save_image_metadata(self, image_datetime, image_path: str):
-        """ Saves metadata about the image (location, time, path) to PostgreSQL.
 
-        :param image_datetime: datime of satellite image
-        :param image_path: satellite image storage file path
-        """
-        metadata = SatelliteImageMetadata(
-            satellite_type=self.cfg['sentinel_type'],
-            location_name=self.cfg['location']['name'],
-            image_date=image_datetime,
-            min_lat=self.cfg['location']['coordinates']['min_lat'],
-            min_lon=self.cfg['location']['coordinates']['min_lon'],
-            max_lat=self.cfg['location']['coordinates']['max_lat'],
-            max_lon=self.cfg['location']['coordinates']['max_lon'],
-            image_path=image_path
-        )
-        creds = self.get_pg_credentials()
-        save_to_pg(creds, metadata, self.logger)
+class SentinelDataPipeline:
+    def __init__(self, cfg: dict):
+        self.cfg = cfg
+        self.logger = setup_logger(self.__class__.__name__, 'extraction')
+        self.secrets_path = Path(__file__).resolve().parents[2] / '.secrets'
+        self.token_path = self.secrets_path / 'sentinelhub_token.json'
+        self.cred_mgr = CredentialManager(self.secrets_path)
 
-    def extraction_pipeline(self, n_days: int = 1):
+    def run(self, n_days: int = 1):
         """ Executes the full extraction process for the last n_days:
 
         Authenticates with SentinelHub
@@ -269,18 +242,39 @@ class SentinelDataExtractor:
         :param n_days: number of days to look back from today
         """
 
-        self.sentinelhub_authentication()
+        sentinel_creds = self.cred_mgr.get_sentinelhub_credentials()
+        auth = SentinelHubAuthenticator(sentinel_creds, self.token_path, self.logger)
+        token, oauth = auth.authenticate()
+
+        service = SentinelImageExtractor(self.cfg, oauth, token, self.logger)
+        minio_creds = self.cred_mgr.get_minio_credentials()
+        pg_creds = self.cred_mgr.get_pg_credentials()
 
         start_date, end_date = get_date_range(n_days)
         iso_start_date = get_iso_datetime_format(start_date)
         iso_end_date = get_iso_datetime_format(end_date)
 
-        self.get_available_dates(iso_start_date, iso_end_date)
-        for date in self.available_dates:
+        available_dates = service.get_available_dates(iso_start_date, iso_end_date)
+        for date in available_dates:
             try:
-                image = self.get_sentinel_image(date)
+                image = service.download_sentinel_image(date)
                 file_name = f"{get_compact_datime_format(date)}_{self.cfg['location']['name']}.tiff"
-                self.save_image(file_name, image)
-                self.save_image_metadata(date, file_name)
+                bucket_name = 'satellite-images'
+                save_to_minio(minio_creds, bucket_name, file_name, image, 'image/tiff', self.logger)
+                self.logger.info(f'Saved image to {bucket_name}/{file_name}')
+
+                # TODO: mechanism to load metadata later (i.e. when PostgreSQL fails)
+                metadata = SatelliteImageMetadata(
+                    satellite_type=self.cfg['sentinel_type'],
+                    location_name=self.cfg['location']['name'],
+                    image_date=date,
+                    min_lat=self.cfg['location']['coordinates']['min_lat'],
+                    min_lon=self.cfg['location']['coordinates']['min_lon'],
+                    max_lat=self.cfg['location']['coordinates']['max_lat'],
+                    max_lon=self.cfg['location']['coordinates']['max_lon'],
+                    image_path=file_name
+                )
+                save_to_pg(pg_creds, metadata, self.logger)
+
             except Exception as e:
                 self.logger.error(f'Failed to process and save image for image_datetime {date}: {e}')

@@ -5,6 +5,7 @@ from src.db.pg_data_models import SatelliteImageMetadata
 
 import logging
 
+# TODO: create class PostgresSaver
 
 def save_to_pg(creds: dict, object: SatelliteImageMetadata, logger=None):
     if logger is None:
