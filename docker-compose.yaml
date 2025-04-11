@@ -21,8 +21,8 @@ services:
     container_name: satellite_minio
     restart: always
     environment:
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: miniopass
     ports:
       - "9000:9000"
       - "9090:9090"
