@@ -1,4 +1,4 @@
-from src.extractor.sentinel_hub import SentinelDataPipeline
+from src.extractors.sentinel_hub import SentinelDataPipeline
 
 CONFIG = {
     'location': {

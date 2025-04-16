@@ -1,9 +1,9 @@
 from unittest.mock import patch, MagicMock
 
-from src.extractor.sentinel_hub import SentinelImageExtractor
+from src.extractors.sentinel_hub import SentinelImageExtractor
 
 
-@patch('src.extractor.sentinel_hub.requests.post')
+@patch('src.extractors.sentinel_hub.requests.post')
 def test_get_available_dates(mock_post):
     iso_datetime = '2024-01-01T00:00:00Z'
     mock_response = MagicMock()

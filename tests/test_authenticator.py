@@ -1,10 +1,10 @@
 from unittest.mock import MagicMock, patch
 from datetime import datetime, timedelta
 import pytz
-from src.extractor.sentinel_hub import SentinelHubAuthenticator
+from src.extractors.sentinel_hub import SentinelHubAuthenticator
 
 
-@patch('src.extractor.sentinel_hub.OAuth2Session.fetch_token')
+@patch('src.extractors.sentinel_hub.OAuth2Session.fetch_token')
 def test_fetch_token(mock_fetch_token, tmp_path):
     credentials = {"client_id": "client", "client_secret": "secret"}
     token_path = tmp_path / "token.json"

@@ -1,23 +1,23 @@
 from unittest.mock import patch, MagicMock
 import datetime
-from src.extractor.sentinel_hub import SentinelDataPipeline
+from src.extractors.sentinel_hub import SentinelDataPipeline
 
 
-@patch('src.extractor.sentinel_hub.CredentialManager.get_sentinelhub_credentials'
+@patch('src.extractors.sentinel_hub.CredentialManager.get_sentinelhub_credentials'
     , return_value={'client_id': 'xxx', 'client_secret': 'yyy'})
-@patch('src.extractor.sentinel_hub.SentinelHubAuthenticator.authenticate')
-@patch('src.extractor.sentinel_hub.CredentialManager.get_minio_credentials'
+@patch('src.extractors.sentinel_hub.SentinelHubAuthenticator.authenticate')
+@patch('src.extractors.sentinel_hub.CredentialManager.get_minio_credentials'
     , return_value={'endpoint': 'localhost:9000', 'access_key': 'xxx', 'secret_key': 'yyy'})
-@patch('src.extractor.sentinel_hub.CredentialManager.get_pg_credentials'
+@patch('src.extractors.sentinel_hub.CredentialManager.get_pg_credentials'
     , return_value={'hostname': 'localhost', 'username': 'xxx', 'password': 'yyy'})
-@patch('src.extractor.sentinel_hub.get_date_range'
+@patch('src.extractors.sentinel_hub.get_date_range'
     , return_value=(datetime.datetime(2025, 1, 1, 0, 0), datetime.datetime(2025, 1, 2, 0, 0)))
-@patch('src.extractor.sentinel_hub.get_iso_datetime_format', return_value='2025-01-01T00:00:00.000000Z')
-@patch('src.extractor.sentinel_hub.SentinelImageExtractor.get_available_dates'
+@patch('src.extractors.sentinel_hub.get_iso_datetime_format', return_value='2025-01-01T00:00:00.000000Z')
+@patch('src.extractors.sentinel_hub.SentinelImageExtractor.get_available_dates'
     , return_value=['2025-01-01T00:00:00.000000Z', '2025-01-01T00:00:00.000000Z'])
-@patch('src.extractor.sentinel_hub.SentinelImageExtractor.download_sentinel_image', return_value=b'image-bytes')
-@patch('src.extractor.sentinel_hub.save_to_minio')
-@patch('src.extractor.sentinel_hub.save_to_pg')
+@patch('src.extractors.sentinel_hub.SentinelImageExtractor.download_sentinel_image', return_value=b'image-bytes')
+@patch('src.extractors.sentinel_hub.save_to_minio')
+@patch('src.extractors.sentinel_hub.save_to_pg')
 def test_data_pipeline(
         mock_save_to_pg,
         mock_save_to_minio,

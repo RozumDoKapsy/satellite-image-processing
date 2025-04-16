@@ -2,7 +2,7 @@ import pytest
 import json
 from pathlib import Path
 
-from src.extractor.sentinel_hub import CredentialManager
+from src.extractors.sentinel_hub import CredentialManager
 
 
 def test_load_json_success(tmp_path):
