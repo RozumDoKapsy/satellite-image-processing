@@ -8,34 +8,13 @@ import json
 from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
 
-from src.utils.log_utils import setup_logger
 from src.db.minio_storage import save_to_minio
 from src.db.pg_database import save_to_pg
 from src.db.pg_data_models import SatelliteImageMetadata
+
+from src.utils.credentials import CredentialManager
 from src.utils.common_utils import get_date_range, get_iso_datetime_format, get_compact_datime_format
-
-
-class CredentialManager:
-    # TODO: refactor to .env
-    # TODO: save credentials to .env (add them variables for creds to docker-compose)
-    def __init__(self, secrets_path):
-        self.secrets_path = Path(secrets_path)
-
-    def load_json(self, filename):
-        try:
-            with open(self.secrets_path / filename, 'r') as f:
-                return json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            raise RuntimeError(f'Failed to load {filename}: {e}')
-
-    def get_sentinelhub_credentials(self):
-        return self.load_json('sentinelhub_credentials.json')
-
-    def get_minio_credentials(self):
-        return self.load_json('minio_credentials.json')
-
-    def get_pg_credentials(self):
-        return self.load_json('pg_credentials.json')
+from src.utils.log_utils import setup_logger
 
 
 class SentinelHubAuthenticator:
