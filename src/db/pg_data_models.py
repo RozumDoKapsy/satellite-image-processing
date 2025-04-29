@@ -34,3 +34,36 @@ class SatelliteImageMetadata(Base):
     @staticmethod
     def datetime2date_str(datetime_format: datetime.datetime) -> str:
         return datetime_format.strftime('%Y-%m-%d')
+
+
+class WeatherHourly(Base):
+    __tablename__ = 'weather_hourly'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    location_name = Column(String, nullable=False)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    timestamp = Column(DateTime, nullable=False)
+    temperature_2m = Column(Float, nullable=True)
+    precipitation = Column(Float, nullable=True)
+    rain = Column(Float, nullable=True)
+    soil_temperature_0cm = Column(Float, nullable=True)
+    soil_moisture_0_to_1cm = Column(Float, nullable=True)
+    extraction_date = Column(Date, default=datetime.datetime.now(datetime.UTC))
+
+    def __init__(self, location_name, latitude, longitude, timestamp, temperature_2m, precipitation,
+                 rain, soil_temperature_0cm, soil_moisture_0_to_1cm):
+        self.location_name = location_name
+        self.latitude = latitude
+        self.longitude = longitude
+        self.timestamp = timestamp
+        self.temperature_2m = temperature_2m
+        self.precipitation = precipitation
+        self.rain = rain
+        self.soil_temperature_0cm = soil_temperature_0cm
+        self.soil_moisture_0_to_1cm = soil_moisture_0_to_1cm
+        self.extraction_date = self.datetime2date_str(datetime.datetime.now(datetime.UTC))
+
+    @staticmethod
+    def datetime2date_str(datetime_format: datetime.datetime) -> str:
+        return datetime_format.strftime('%Y-%m-%d')
