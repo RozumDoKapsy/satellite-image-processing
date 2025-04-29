@@ -15,3 +15,7 @@ def get_iso_datetime_format(date_time: datetime) -> str:
 
 def get_compact_datime_format(iso_date: str) -> str:
     return datetime.strptime(iso_date, '%Y-%m-%dT%H:%M:%S.%fZ').strftime('%Y%m%d%H%M%f')
+
+
+def date_string_format(date_time: datetime) -> str:
+    return date_time.strftime('%Y-%m-%d')
