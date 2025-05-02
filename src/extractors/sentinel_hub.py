@@ -9,12 +9,13 @@ from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
 
 from src.db.minio_storage import save_to_minio
-from src.db.pg_database import save_to_pg
+from src.db.pg_database import PostgreSaver
 from src.db.pg_data_models import SatelliteImageMetadata
 
 from src.utils.credentials import CredentialManager
 from src.utils.common_utils import get_date_range, get_iso_datetime_format, get_compact_datime_format
-from src.utils.log_utils import setup_logger
+
+import logging
 
 
 class SentinelHubAuthenticator:
@@ -205,7 +206,7 @@ class SentinelImageExtractor:
 class SentinelDataPipeline:
     def __init__(self, cfg: dict):
         self.cfg = cfg
-        self.logger = setup_logger(self.__class__.__name__, 'extraction')
+        self.logger = logging.getLogger(self.__class__.__name__)
         self.secrets_path = Path(__file__).resolve().parents[2] / '.secrets'
         self.token_path = self.secrets_path / 'sentinelhub_token.json'
         self.cred_mgr = CredentialManager(self.secrets_path)
@@ -253,7 +254,9 @@ class SentinelDataPipeline:
                     max_lon=self.cfg['location']['coordinates']['max_lon'],
                     image_path=file_name
                 )
-                save_to_pg(pg_creds, metadata, self.logger)
+
+                postgre_saver = PostgreSaver(pg_creds)
+                postgre_saver.save('satellite_image_processing', metadata)
 
             except Exception as e:
                 self.logger.error(f'Failed to process and save image for image_datetime {date}: {e}')
