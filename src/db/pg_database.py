@@ -1,9 +1,10 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import IntegrityError
 
 from src.db.pg_data_models import SatelliteImageMetadata, WeatherHourly
 
-from typing import Union, List
+from typing import Union
 import logging
 
 
@@ -19,16 +20,12 @@ class PostgreSaver:
         session = Session()
         return session
 
-    def save_bulk(self, db_name: str, records: List[Union[SatelliteImageMetadata, WeatherHourly]]):
-        session = self._create_session(db_name)
-
-        session.add_all(records)
-        session.commit()
-        self.logger.info(f'{len(records)} records saved to: {records[0].__tablename__}')
-
-    def save_single(self, db_name: str, record: Union[SatelliteImageMetadata, WeatherHourly]):
+    def save(self, db_name: str, record: Union[SatelliteImageMetadata, WeatherHourly]):
         session = self._create_session(db_name)
 
         session.add(record)
-        session.commit()
-        self.logger.info(f'Record saved to: {record.__tablename__}')
+        try:
+            session.commit()
+            self.logger.info(f'Record saved to: {record.__tablename__}')
+        except IntegrityError as e:
+            self.logger.warning(f'Skippping row: {e.orig.diag.message_detail}')
