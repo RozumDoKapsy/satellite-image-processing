@@ -4,8 +4,8 @@ from pathlib import Path
 PATH_TO_LOGS = Path(__file__).resolve().parents[2] / 'logs'
 
 
-def setup_logger(loger_name: str, file_name: str):
-    logger = logging.getLogger(loger_name)
+def setup_logger(file_name: str):
+    logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
 
     console_handler = logging.StreamHandler()
