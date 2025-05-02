@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime
+from sqlalchemy import Column, Integer, String, Float, DateTime, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -17,16 +17,7 @@ class SatelliteImageMetadata(Base):
     max_lon = Column(Float, nullable=False)
     image_path = Column(String, nullable=False)
 
-    def __init__(self, satellite_type, location_name, image_date
-                 , min_lat, min_lon, max_lat, max_lon, image_path):
-        self.satellite_type = satellite_type
-        self.location_name = location_name
-        self.image_date = image_date
-        self.min_lat = min_lat
-        self.min_lon = min_lon
-        self.max_lat = max_lat
-        self.max_lon = max_lon
-        self.image_path = image_path
+    __table_args__ = (UniqueConstraint(image_date, min_lat, min_lon, max_lat, max_lon),)
 
 
 class WeatherHourly(Base):
@@ -42,3 +33,5 @@ class WeatherHourly(Base):
     rain = Column(Float, nullable=True)
     soil_temperature_0cm = Column(Float, nullable=True)
     soil_moisture_0_to_1cm = Column(Float, nullable=True)
+
+    __table_args__ = (UniqueConstraint(latitude, longitude, timestamp),)
