@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS satellite_images_metadata (
     max_lat FLOAT NOT NULL,
     max_lon FLOAT NOT NULL,
     image_path VARCHAR NOT NULL,
-    extraction_date DATE NOT NULL
+    extraction_date DATE NOT NULL DEFAULT CURRENT_DATE
 );
 
 CREATE TABLE IF NOT EXISTS weather_hourly (
@@ -22,5 +22,5 @@ CREATE TABLE IF NOT EXISTS weather_hourly (
    rain FLOAT,
    soil_temperature_0cm FLOAT,
    soil_moisture_0_to_1cm FLOAT,
-   extraction_date DATE NOT NULL
+   extraction_date DATE NOT NULL DEFAULT CURRENT_DATE
 );
