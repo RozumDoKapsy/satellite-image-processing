@@ -133,7 +133,7 @@ class SentinelImageExtractor:
                 data['next'] = next_page
 
             except requests.exceptions.RequestException as e:
-                self.logger.error(f'API request failed: {e}, Response: {response.text}')
+                self.logger.error(f'API request failed: {e}')
                 raise
 
         self.logger.info(f'Available dates: {len(all_dates)}')
