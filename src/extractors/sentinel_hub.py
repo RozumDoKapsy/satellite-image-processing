@@ -180,10 +180,10 @@ class SentinelImageExtractor:
         self.logger.info(f"Date - {iso_datetime}")
         url = "https://sh.dataspace.copernicus.eu/api/v1/process"
         try:
-            response = self.oauth.post(url, json=request, headers=headers).content
-            return response
-
-        except Exception as e:
+            response = self.oauth.post(url, json=request, headers=headers)
+            response.raise_for_status()
+            return response.content
+        except requests.exceptions.RequestException as e:
             self.logger.error(f'Failed to get sentinel images: {e}')
             raise
 
