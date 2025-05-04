@@ -17,7 +17,7 @@ from src.extractors.sentinel_hub import SentinelDataPipeline
     , return_value=['2025-01-01T00:00:00.000000Z', '2025-01-01T00:00:00.000000Z'])
 @patch('src.extractors.sentinel_hub.SentinelImageExtractor.download_sentinel_image', return_value=b'image-bytes')
 @patch('src.extractors.sentinel_hub.save_to_minio')
-@patch('src.extractors.sentinel_hub.PostgreSaver.save')
+@patch('src.db.pg_database.PostgreSaver.save')
 def test_data_pipeline(
         mock_pg_save,
         mock_save_to_minio,
@@ -56,3 +56,4 @@ def test_data_pipeline(
     mock_pg_save.assert_called()
 
     assert mock_download_sentinel_image.call_count == 2
+    assert mock_pg_save.call_count == 2
