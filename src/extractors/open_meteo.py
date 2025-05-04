@@ -70,6 +70,10 @@ class OpenMeteoPipeline:
             if key not in self.cfg['location'].get('coordinates', {}):
                 raise KeyError(f'Missing coordinate key: {key}')
 
+    @staticmethod
+    def _safe_get(lst, idx):
+        return lst[idx] if lst and idx < len(lst) else None
+
     def run(self, history: bool = True, n_days: int = 1):
         yesterday_date = datetime.today() - timedelta(days=1)
         start_date, end_date = get_date_range(n_days, end_date=yesterday_date)
@@ -95,22 +99,19 @@ class OpenMeteoPipeline:
 
                 creds = self.credential_manager.get_pg_credentials()
                 postgre_saver = PostgreSaver(creds)
-
-                records = []
                 for i in range(len(weather_data[self.cfg['weather_frequency']]['time'])):
                     data = WeatherHourly(
                         location_name=self.cfg['location']['name'],
                         latitude=self.extractor.lat,
                         longitude=self.extractor.lon,
                         timestamp=frequency_data['time'][i],
-                        temperature_2m=(frequency_data.get('temperature_2m') or [None])[i],
-                        precipitation=(frequency_data.get('precipitation') or [None])[i],
-                        rain=(frequency_data.get('rain') or [None])[i],
-                        soil_temperature_0cm=(frequency_data.get('soil_temperature_0cm') or [None])[i],
-                        soil_moisture_0_to_1cm=(frequency_data.get('soil_moisture_0_to_1cm') or [None])[i],
+                        temperature_2m=self._safe_get(frequency_data.get('temperature_2m'), i),
+                        precipitation=self._safe_get(frequency_data.get('precipitation'), i),
+                        rain=self._safe_get(frequency_data.get('rain'), i),
+                        soil_temperature_0cm=self._safe_get(frequency_data.get('soil_temperature_0cm'), i),
+                        soil_moisture_0_to_1cm=self._safe_get(frequency_data.get('soil_moisture_0_to_1cm'), i),
                     )
                     postgre_saver.save('satellite_image_processing', data)
-                    records.append(data)
 
             except Exception as e:
                 self.logger.error(f'Failed to process and save weather data: {e}')
