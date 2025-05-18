@@ -129,6 +129,7 @@ celerybeat.pid
 
 # Environments
 .env
+.venv-dev
 .venv
 env/
 venv/
@@ -177,3 +178,4 @@ cython_debug/
 logs
 .idea
 data
+plugins
