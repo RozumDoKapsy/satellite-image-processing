@@ -1,30 +1,36 @@
+import os
+from dotenv import load_dotenv
 from pathlib import Path
-import json
 
-from typing import Union
+from typing import Union, Dict, Optional
 
 
 class CredentialManager:
-    # TODO: refactor to .env
-    # TODO: save credentials to .env (add them variables for creds to docker-compose)
-    def __init__(self, secrets_path: Union[str, Path]):
-        self.secrets_path = Path(secrets_path)
+    def __init__(self, dotenv_path: Optional[Union[str, Path]] = None):
+        # dotenv_path = dotenv_path or Path(__file__).resolve().parents[2] / '.env'
+        # if dotenv_path.exists():
+        #     load_dotenv(dotenv_path=dotenv_path)
+        pass
 
-    def load_json(self, filename: str):
-        try:
-            with open(self.secrets_path / filename, 'r') as f:
-                return json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            raise RuntimeError(f'Failed to load {filename}: {e}')
+    @staticmethod
+    def get_sentinelhub_credentials() -> Dict[str, str]:
+        return {
+            "client_id": os.getenv("SENTINELHUB_CLIENT_ID"),
+            "client_secret": os.getenv("SENTINELHUB_CLIENT_SECRET")
+        }
 
-    def get_sentinelhub_credentials(self):
-        return self.load_json('sentinelhub_credentials.json')
+    @staticmethod
+    def get_minio_credentials():
+        return {
+            "access_key": os.getenv("MINIO_ACCESS_KEY"),
+            "secret_key": os.getenv("MINIO_SECRET_KEY"),
+            "endpoint": os.getenv("MINIO_ENDPOINT")
+        }
 
-    def get_minio_credentials(self):
-        return self.load_json('minio_credentials.json')
-
-    def get_pg_credentials(self):
-        return self.load_json('pg_credentials.json')
-
-    def get_open_meteo_credentials(self):
-        return self.load_json('open_meteo_credentials.json')
+    @staticmethod
+    def get_pg_credentials():
+        return {
+            "hostname": os.getenv("SATELLITE_POSTGRES_HOSTNAME"),
+            "username": os.getenv("SATELLITE_POSTGRES_TECHNICAL_USER"),
+            "password": os.getenv("SATELLITE_POSTGRES_TECHNICAL_PASSWORD")
+        }
