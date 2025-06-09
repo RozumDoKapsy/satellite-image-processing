@@ -12,6 +12,7 @@ class PostgreSaver:
     def __init__(self, creds: dict):
         self.creds = creds
         self.logger = logging.getLogger(self.__class__.__name__)
+        self.skipped_rows = 0
 
     def _create_session(self, db_name: str):
         db_url = f"postgresql://{self.creds['username']}:{self.creds['password']}@{self.creds['hostname']}:5432/{db_name}"
@@ -29,3 +30,4 @@ class PostgreSaver:
             self.logger.info(f'Record saved to: {record.__tablename__}')
         except IntegrityError as e:
             self.logger.warning(f'Skippping row: {e.orig.diag.message_detail}')
+            self.skipped_rows += 1
