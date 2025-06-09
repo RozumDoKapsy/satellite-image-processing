@@ -8,9 +8,25 @@ import json
 
 from typing import Dict, Any, List
 
+"""
+### Extract Open-Meteo Weather Data DAG
 
+This DAG extracts historical weather data from the Open-Meteo API, transforms it into a structured format, 
+and loads it into a PostgreSQL database. It is designed to run daily and process data for the previous `n_days`.
+
+**Workflow Steps:**
+1. Get date range (default: yesterday, or last `n_days`)
+2. Extract raw weather data using the Open-Meteo API
+3. Transform raw weather data into a list of structured records
+4. Load the processed data into a PostgreSQL database
+
+**Configuration:**
+- DAG Parameters: `n_days` (default: 1)
+- Coordinates, weather variables, and frequency are managed via Airflow Variable: `extract_config`
+- Credentials are retrieved using a custom `CredentialManager`
+"""
 @dag(
-    dag_id="openmeteo_extraction",
+    dag_id="extract_openmeteo",
     schedule="0 0 * * *",
     start_date=pendulum.datetime(2021, 1, 1, tz="UTC"),
     catchup=False,
@@ -19,7 +35,7 @@ from typing import Dict, Any, List
         'n_days': 1
     }
 )
-def openmeteo_extraction():
+def extract_openmeteo():
     config_json = Variable.get('extract_config')
     CONFIG = json.loads(config_json)
 
@@ -84,4 +100,4 @@ def openmeteo_extraction():
     load_data(processed_weather_data)
 
 
-openmeteo_extraction()
+extract_openmeteo()
