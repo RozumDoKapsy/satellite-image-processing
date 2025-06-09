@@ -27,13 +27,22 @@ x-airflow-common:
     # The following line can be used to set a custom config file, stored in the local config folder
     AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
     PYTHONPATH: /opt/airflow
+
+    SENTINELHUB_CLIENT_ID: ${SENTINELHUB_CLIENT_ID}
+    SENTINELHUB_CLIENT_SECRET: ${SENTINELHUB_CLIENT_SECRET}
+    MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+    MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+    MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+    SATELLITE_POSTGRES_HOSTNAME: ${SATELLITE_POSTGRES_HOSTNAME}
+    SATELLITE_POSTGRES_TECHNICAL_USER: ${SATELLITE_POSTGRES_TECHNICAL_USER}
+    SATELLITE_POSTGRES_TECHNICAL_PASSWORD: ${SATELLITE_POSTGRES_TECHNICAL_PASSWORD}
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
     - ${AIRFLOW_PROJ_DIR:-.}/src:/opt/airflow/src
-    - ${AIRFLOW_PROJ_DIR:-.}/.secrets:/opt/airflow/.secrets # TODO: DELETE, replace with .env
+#    - ${AIRFLOW_PROJ_DIR:-.}/.env:/opt/airflow/.env # TODO: DELETE, replace with .env
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
@@ -51,9 +60,9 @@ services:
     container_name: satellite_pg
     restart: always
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: adminpass
-      POSTGRES_DB: satellite_image_processing
+      POSTGRES_USER: ${SATELLITE_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${SATELLITE_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${SATELLITE_POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
@@ -67,8 +76,8 @@ services:
     container_name: satellite_minio
     restart: always
     environment:
-      MINIO_ROOT_USER: minio
-      MINIO_ROOT_PASSWORD: miniopass
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
       - "9000:9000"
       - "9090:9090"
@@ -82,9 +91,9 @@ services:
     image: postgres:13
     container_name: airflow_postgres
     environment:
-      POSTGRES_USER: airflow
-      POSTGRES_PASSWORD: airflow
-      POSTGRES_DB: airflow
+      POSTGRES_USER: ${AIRFLOW_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${AIRFLOW_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${AIRFLOW_POSTGRES_DB}
     volumes:
       - airflow_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -183,8 +192,6 @@ services:
         condition: service_healthy
       airflow-init:
         condition: service_completed_successfully
-#    networks:
-#      - satellite-network
 
   airflow-triggerer:
     <<: *airflow-common
