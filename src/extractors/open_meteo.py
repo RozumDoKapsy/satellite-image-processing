@@ -5,7 +5,7 @@ from src.utils.credentials import CredentialManager
 from src.db.pg_data_models import WeatherHourly
 from src.db.pg_database import PostgreSaver
 
-from typing import Tuple, Dict, List, Any, Union
+from typing import Tuple, Dict, List, Any, Union, Optional
 import logging
 
 
@@ -13,9 +13,9 @@ class OpenMeteoExtractor:
     """ Extracts historical or forecast weather data from the Open-Meteo API.
     :param coords: dictionary containing coordinate bounds (bbox) with keys 'min_lat', 'max_lat', 'min_lon', 'max_lon'
     """
-    def __init__(self, coords: Dict):
-        self.logger = logging.getLogger(self.__class__.__name__)
+    def __init__(self, coords: Dict, logger: Optional[logging.Logger] = None):
         self.coords = coords
+        self.logger = logger or logging.getLogger(self.__class__.__name__)
         self.lat = self._get_mean_coords()[0]
         self.lon = self._get_mean_coords()[1]
 
@@ -75,9 +75,9 @@ class OpenMeteoProcessor:
 
     :param cfg: configuration dictionary
     """
-    def __init__(self, cfg: Dict):
-        self.logger = logging.getLogger(self.__class__.__name__)
+    def __init__(self, cfg: Dict, logger: Optional[logging.Logger] = None):
         self.cfg = cfg
+        self.logger = logger or logging.getLogger(self.__class__.__name__)
 
     @staticmethod
     def _safe_get(lst: List[Any], idx: int) -> Union[Any, None]:
@@ -132,9 +132,10 @@ class OpenMeteoSaver:
 
     :param creds: dictionary of database credentials
     """
-    def __init__(self, creds: Dict):
-        self.logger = logging.getLogger(self.__class__.__name__)
+    def __init__(self, creds: Dict, logger: Optional[logging.Logger] = None):
         self.postgre_saver = PostgreSaver(creds)
+        self.logger = logger or logging.getLogger(self.__class__.__name__)
+
 
     @staticmethod
     def _weather_hourly_object(data: Dict[str, Any]) -> WeatherHourly:
@@ -175,10 +176,9 @@ class OpenMeteoPipeline:
 
     :param cfg: Configuration dictionary containing location, variables, and frequency.
     """
-    def __init__(self, cfg: Dict):
-        self.logger = logging.getLogger(self.__class__.__name__)
-
+    def __init__(self, cfg: Dict, logger: Optional[logging.Logger] = None):
         self.cfg = cfg
+        self.logger = logger or logging.getLogger(self.__class__.__name__)
         self._validate_config_params()
         self.credential_manager = CredentialManager()
         self.extractor = OpenMeteoExtractor(self.cfg['location']['coordinates'])
