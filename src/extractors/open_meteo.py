@@ -171,8 +171,9 @@ class OpenMeteoSaver:
 
 
 class OpenMeteoPipeline:
-    """
+    """ Orchestrates the complete weather data extraction, transformation, and loading (ETL) process.
 
+    :param cfg: Configuration dictionary containing location, variables, and frequency.
     """
     def __init__(self, cfg: Dict):
         self.logger = logging.getLogger(self.__class__.__name__)
