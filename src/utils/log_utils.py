@@ -6,7 +6,7 @@ from typing import Optional
 PATH_TO_LOGS = Path(__file__).resolve().parents[2] / 'logs'
 
 
-def setup_logger(file_name: Optional[str] = None) -> logging.logger:
+def setup_logger(file_name: Optional[str] = None) -> logging.Logger:
     """ Setups a custom logger for console handling and optional file handling.
 
     :param file_name: name of the file to store logs
