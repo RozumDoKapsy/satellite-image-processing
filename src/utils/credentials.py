@@ -7,10 +7,9 @@ from typing import Union, Dict, Optional
 
 class CredentialManager:
     def __init__(self, dotenv_path: Optional[Union[str, Path]] = None):
-        # dotenv_path = dotenv_path or Path(__file__).resolve().parents[2] / '.env'
-        # if dotenv_path.exists():
-        #     load_dotenv(dotenv_path=dotenv_path)
-        pass
+        dotenv_path = dotenv_path or Path(__file__).resolve().parents[2] / '.env'
+        if dotenv_path.exists():
+            load_dotenv(dotenv_path=dotenv_path)
 
     @staticmethod
     def get_sentinelhub_credentials() -> Dict[str, str]:
