@@ -4,6 +4,7 @@
 - Create .env to store environmental variables (maybe try airflow variables)
   - refactor CredentialsManager
 - Modularize SentinelHub and OpenMeteo pipelines, so that extraction and saving to DB can be separate task
+  - TODO: create or refactor test for refactored pipelines
 - Create Pipeline Config that contains information about location etc.
 - Create DAGs, but run task from CLI (later replace with dbt??)
 - Airflow variables to extract data for specific number of days
