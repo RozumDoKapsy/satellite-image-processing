@@ -180,3 +180,10 @@ logs
 .idea
 data
 plugins
+
+# Local .terraform directories
+.terraform/
+
+# Terraform state files
+*.tfstate
+*.tfstate.backup
