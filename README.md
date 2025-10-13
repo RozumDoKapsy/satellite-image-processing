@@ -1,5 +1,15 @@
 # satellite-image-processing
 
+## Infrastructure setup
+- install make
+```commandline
+sudo apt install make
+```
+- run 
+```commandline
+make install-terraform
+```
+
 ## Next-steps
 - Create .env to store environmental variables (maybe try airflow variables)
   - refactor CredentialsManager
