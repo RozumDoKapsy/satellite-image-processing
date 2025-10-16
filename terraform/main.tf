@@ -37,3 +37,18 @@ module "minio" {
     dotenv = dotenv
   }
 }
+
+module "sattelite_postgres" {
+  source = "./modules/postgres"
+
+  postgres_user = data.dotenv.env.env.SATELLITE_POSTGRES_USER
+  postgres_password = data.dotenv.env.env.SATELLITE_POSTGRES_PASSWORD
+  postgres_db = data.dotenv.env.env.SATELLITE_POSTGRES_DB
+
+  network_name = docker_network.satellite-network.name
+
+  providers = {
+    docker = docker
+    dotenv = dotenv
+  }
+}
