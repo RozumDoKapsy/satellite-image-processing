@@ -17,7 +17,7 @@ resource "docker_image" "postgres" {
   name = "postgres:15"
 }
 
-resource "docker_container" "sattelite_postgres" {
+resource "docker_container" "satellite_postgres" {
   image = docker_image.postgres.name
   name = "satellite_pg"
 

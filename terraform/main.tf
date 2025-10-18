@@ -38,7 +38,7 @@ module "minio" {
   }
 }
 
-module "sattelite_postgres" {
+module "satellite_postgres" {
   source = "./modules/postgres"
 
   postgres_user = data.dotenv.env.env.SATELLITE_POSTGRES_USER
