@@ -52,3 +52,10 @@ module "satellite_postgres" {
     dotenv = dotenv
   }
 }
+
+module "kind_cluster" {
+  source = "./modules/kind_cluster"
+
+  cluster_name = data.dotenv.env.env.CLUSTER_NAME
+  node_count = data.dotenv.env.env.NODE_COUNT
+}
