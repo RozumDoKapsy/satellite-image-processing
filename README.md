@@ -5,9 +5,15 @@
 ```commandline
 sudo apt install make
 ```
-- run 
+- either install terraform, kind and kubectl together
+```commandline
+make install-all
+```
+- or install each separately
 ```commandline
 make install-terraform
+make install-kind
+make install-kubectl
 ```
 
 ## Next-steps
