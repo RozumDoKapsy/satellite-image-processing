@@ -7,13 +7,6 @@ install-terraform:
 	sudo apt-get install terraform
 	@terraform -version
 
-install-kind:
-	@echo "Installing kind (Kubernetes)..."
-	curl -Lo ./kind https://kind.sigs.k8s.io/dl/latest/kind-linux-amd64
-	chmod +x ./kind
-	sudo mv ./kind /usr/local/bin/kind
-	@kind version
-
 install-kubectl:
 	@echo "Installing kubectl..."
 	curl -LO "https://dl.k8s.io/release/$$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
@@ -21,7 +14,7 @@ install-kubectl:
 	sudo mv ./kubectl /usr/local/bin/kubectl
 	@kubectl version --client
 
-install-all: install-terraform install-kind install-kubectl
+install-all: install-terraform install-kubectl
 
 uninstall-all:
 	@echo "Uninstalling terraform, kind and kubectl..."
@@ -29,5 +22,4 @@ uninstall-all:
 	sudo rm -f /etc/apt/sources.list.d/hashicorp.list
 	sudo rm -f /usr/share/keyrings/hashicorp-archive-keyring.gpg
 	sudo apt update
-	sudo rm -f /usr/local/bin/kind
 	sudo rm -f /usr/local/bin/kubectl

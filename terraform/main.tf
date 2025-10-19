@@ -8,12 +8,18 @@ terraform {
             source = "jrhouston/dotenv"
             version = "~> 1.0.1"
         }
+        kind = {
+            source = "tehcyx/kind"
+            version = "0.9.0"
+        }
     }
 }
 
 provider "dotenv" {}
 
 provider "docker" {}
+
+provider "kind" {}
 
 resource "docker_network" "satellite-network" {
   name = var.network_name
@@ -34,7 +40,6 @@ module "minio" {
 
   providers = {
     docker = docker
-    dotenv = dotenv
   }
 }
 
@@ -49,7 +54,6 @@ module "satellite_postgres" {
 
   providers = {
     docker = docker
-    dotenv = dotenv
   }
 }
 
@@ -58,4 +62,8 @@ module "kind_cluster" {
 
   cluster_name = data.dotenv.env.env.CLUSTER_NAME
   node_count = data.dotenv.env.env.NODE_COUNT
+
+  providers = {
+    kind = kind
+  }
 }

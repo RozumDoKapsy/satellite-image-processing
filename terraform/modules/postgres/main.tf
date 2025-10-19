@@ -3,9 +3,6 @@ terraform {
     docker = {
       source  = "kreuzwerker/docker"
     }
-    dotenv = {
-      source  = "jrhouston/dotenv"
-    }
   }
 }
 
