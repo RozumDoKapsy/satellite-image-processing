@@ -5,14 +5,15 @@
 ```commandline
 sudo apt install make
 ```
-- either install terraform and kubectl together
+- either install terraform, kubectl and docker together
 ```commandline
 make install-all
 ```
-- or install each separately
+- or install each prerequisite separately
 ```commandline
 make install-terraform
 make install-kubectl
+make install-docker
 ```
 
 ## Next-steps
