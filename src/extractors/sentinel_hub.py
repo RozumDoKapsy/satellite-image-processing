@@ -299,8 +299,6 @@ class SentinelDataPipeline:
     def __init__(self, cfg: dict):
         self.cfg = cfg
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.secrets_path = Path(__file__).resolve().parents[2] / '.secrets'
-        self.token_path = self.secrets_path / 'sentinelhub_token.json'
         self.cred_mgr = CredentialManager()
         self.image_saver = SentinelImageSaver(self.cred_mgr.get_minio_credentials())
         self.metadata_processor = SentinelImageMetadataProcessor(self.cfg)
@@ -317,7 +315,7 @@ class SentinelDataPipeline:
         :param n_days: number of days to look back from today
         """
         sentinel_creds = self.cred_mgr.get_sentinelhub_credentials()
-        auth = SentinelHubAuthenticator(sentinel_creds, self.token_path, self.logger)
+        auth = SentinelHubAuthenticator(sentinel_creds, logger=self.logger)
         token, oauth = auth.authenticate()
 
         service = SentinelImageExtractor(self.cfg, oauth, token, self.logger)
